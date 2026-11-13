@@ -22,13 +22,27 @@ function mod:Decorate(frame)
 	self:ApplyFrameChanges(frame)
 end
 
-function mod:FCF_RestorePositionAndDimensions(chatFrame)
-	if Chatter.db.profile.modules[mod:GetName()] then
-		chatFrame:SetClampRectInsets(0, 0, 0, 0)
+local insets = {}
+
+local function clamp(f)
+	local bottom = insets[f] and insets[f][4] or -50
+	local edit = Chatter:GetModule("Edit Box Polish", true)
+	if edit and edit.db and Chatter.db.profile.modules[edit:GetName()] ~= false then
+		local box = _G[f:GetName() .. "EditBox"] or ChatFrame1EditBox
+		bottom = edit.db.profile.attach == "BOTTOM" and -(8 + box:GetHeight()) or 0
+	end
+	f:SetClampRectInsets(0, 0, 0, bottom)
+	if f:IsClampedToScreen() then
+		f:SetClampedToScreen(false)
+		f:SetClampedToScreen(true)
 	end
 end
 
-local insets = {}
+function mod:FCF_RestorePositionAndDimensions(chatFrame)
+	if Chatter.db.profile.modules[mod:GetName()] then
+		clamp(chatFrame)
+	end
+end
 
 -- Fix the jump in
 for i = 1, NUM_CHAT_WINDOWS do
@@ -39,7 +53,7 @@ end
 
 function mod:ApplyFrameChanges(f)
 	insets[f] = insets[f] or {f:GetClampRectInsets()}
-	f:SetClampRectInsets(0, 0, 0, 0)
+	clamp(f)
 	local ff = _G[f:GetName() .. "ButtonFrame"]
 	ff:Hide()
 	ff:SetScript("OnShow", hide)
